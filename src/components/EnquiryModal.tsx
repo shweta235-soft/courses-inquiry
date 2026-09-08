@@ -1,6 +1,8 @@
 // src/components/EnquiryModal.tsx
 "use client";
 
+import { useState } from "react";
+
 interface EnquiryModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -12,15 +14,64 @@ export default function EnquiryModal({
   onClose,
   courseTitle,
 }: EnquiryModalProps) {
+  // All state string variables properly mapped
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [query, setQuery] = useState("");
+  const [loading, setLoading] = useState(false);
+
   if (!isOpen) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault(); // Stop page reload
+    setLoading(true);
+
+    try {
+      // API call structure
+      const response = await fetch("/api/enquiries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          email,
+          phone,
+          query,
+          course: courseTitle,
+        }),
+      });
+
+      if (response.ok) {
+        alert("🎉 Inquiry submitted successfully in MySQL database!");
+        // Clear all fields
+        setName("");
+        setEmail("");
+        setPhone("");
+        setQuery("");
+        onClose(); // Hide popup modal window
+      } else {
+        const errorData = await response.json();
+        alert(
+          "❌ Database error: " +
+            (errorData.message || "Failed to save inquiry"),
+        );
+      }
+    } catch (error) {
+      console.error("Submission Error:", error);
+      alert("❌ Technical failure connecting to XAMPP local server pipeline.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-      <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl relative animate-in fade-in zoom-in-95 duration-150">
-        {/* Close Cross Button */}
+      <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl relative animate-in fade-in duration-150">
+        {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-xl font-semibold transition-colors p-1"
+          type="button"
+          className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-xl font-semibold p-1"
         >
           ✕
         </button>
@@ -34,16 +85,18 @@ export default function EnquiryModal({
           <span className="font-semibold text-blue-600">{courseTitle}</span>
         </p>
 
-        {/* Enquiry Form */}
-        <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
+        {/* Real Dynamic Form Integration */}
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
               Full Name
             </label>
             <input
               type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               placeholder="Your Name"
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:border-blue-500"
               required
             />
           </div>
@@ -54,8 +107,10 @@ export default function EnquiryModal({
             </label>
             <input
               type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="name@example.com"
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:border-blue-500"
               required
             />
           </div>
@@ -66,8 +121,10 @@ export default function EnquiryModal({
             </label>
             <input
               type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
               placeholder="+91 XXXXX XXXXX"
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:border-blue-500"
               required
             />
           </div>
@@ -78,18 +135,21 @@ export default function EnquiryModal({
             </label>
             <textarea
               rows={4}
-              placeholder="Ask about batch timings, syllabus, placements, discounts etc..."
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-none"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Ask about batch timings, discounts etc..."
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:border-blue-500 resize-none"
               required
             ></textarea>
           </div>
 
-          {/* Submit Button */}
+          {/* Submit Trigger Action Button */}
           <button
             type="submit"
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-lg text-sm transition-colors duration-150 shadow-sm mt-2"
+            disabled={loading}
+            className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-400 text-white font-bold py-2.5 rounded-lg text-sm transition-colors duration-150 shadow-sm mt-2"
           >
-            Submit Inquiry
+            {loading ? "Saving into MySQL Database..." : "Submit Inquiry"}
           </button>
         </form>
       </div>
