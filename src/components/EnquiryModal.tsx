@@ -24,11 +24,10 @@ export default function EnquiryModal({
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); // Stop page reload
+    e.preventDefault();
     setLoading(true);
 
     try {
-      // API call structure
       const response = await fetch("/api/enquiries", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -41,24 +40,36 @@ export default function EnquiryModal({
         }),
       });
 
+      const data = await response.json();
+
       if (response.ok) {
-        alert("🎉 Inquiry submitted successfully in MySQL database!");
-        // Clear all fields
+        alert("🎉 Inquiry submitted successfully!");
         setName("");
         setEmail("");
         setPhone("");
         setQuery("");
-        onClose(); // Hide popup modal window
+        onClose();
       } else {
-        const errorData = await response.json();
-        alert(
-          "❌ Database error: " +
-            (errorData.message || "Failed to save inquiry"),
-        );
+        // 🔥 YAHAN CHANGE KIYA HAI: Agar Zod validation fail hota hai
+        if (data.errors) {
+          // Saare errors ko nikal kar ek clean message banayein
+          const errorMessages = Object.entries(data.errors)
+            .map(
+              ([field, messages]: any) =>
+                `${field.toUpperCase()}: ${messages.join(", ")}`,
+            )
+            .join("\n");
+
+          alert(`❌ Validation Errors:\n\n${errorMessages}`);
+        } else {
+          alert(
+            "❌ Database error: " + (data.message || "Failed to save inquiry"),
+          );
+        }
       }
     } catch (error) {
       console.error("Submission Error:", error);
-      alert("❌ Technical failure connecting to XAMPP local server pipeline.");
+      alert("❌ Technical failure connecting to server.");
     } finally {
       setLoading(false);
     }
